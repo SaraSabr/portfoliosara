@@ -1,12 +1,86 @@
-/**
-* Template Name: Personal
-* Updated: Sep 18 2023 with Bootstrap v5.3.2
-* Template URL: https://bootstrapmade.com/personal-free-resume-bootstrap-template/
-* Author: BootstrapMade.com
-* License: https://bootstrapmade.com/license/
-*/
+
 (function() {
   "use strict";
+
+  const networkCanvas = document.getElementById('network-background');
+  if (networkCanvas) {
+    const networkContext = networkCanvas.getContext('2d');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pointer = { x: 0, y: 0, active: false };
+    let networkPoints = [];
+    let canvasWidth = 0;
+    let canvasHeight = 0;
+
+    const resizeNetwork = () => {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      canvasWidth = window.innerWidth;
+      canvasHeight = window.innerHeight;
+      networkCanvas.width = Math.round(canvasWidth * pixelRatio);
+      networkCanvas.height = Math.round(canvasHeight * pixelRatio);
+      networkContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+      const pointCount = Math.min(78, Math.max(24, Math.floor((canvasWidth * canvasHeight) / 22000)));
+      networkPoints = Array.from({ length: pointCount }, () => ({
+        x: Math.random() * canvasWidth,
+        y: Math.random() * canvasHeight,
+        speedX: (Math.random() - 0.5) * 0.16,
+        speedY: (Math.random() - 0.5) * 0.16,
+        opacity: 0.22 + Math.random() * 0.38
+      }));
+    };
+
+    const drawNetwork = () => {
+      networkContext.clearRect(0, 0, canvasWidth, canvasHeight);
+      const pointerOffsetX = pointer.active && !reducedMotion ? (pointer.x - canvasWidth / 2) * 0.006 : 0;
+      const pointerOffsetY = pointer.active && !reducedMotion ? (pointer.y - canvasHeight / 2) * 0.006 : 0;
+      const connectionDistance = canvasWidth < 768 ? 105 : 145;
+
+      networkPoints.forEach((point, pointIndex) => {
+        if (!reducedMotion) {
+          point.x += point.speedX;
+          point.y += point.speedY;
+          if (point.x < 0 || point.x > canvasWidth) point.speedX *= -1;
+          if (point.y < 0 || point.y > canvasHeight) point.speedY *= -1;
+        }
+
+        const drawX = point.x + pointerOffsetX;
+        const drawY = point.y + pointerOffsetY;
+        for (let nextIndex = pointIndex + 1; nextIndex < networkPoints.length; nextIndex++) {
+          const nextPoint = networkPoints[nextIndex];
+          const distance = Math.hypot(point.x - nextPoint.x, point.y - nextPoint.y);
+          if (distance < connectionDistance) {
+            networkContext.beginPath();
+            networkContext.moveTo(drawX, drawY);
+            networkContext.lineTo(nextPoint.x + pointerOffsetX, nextPoint.y + pointerOffsetY);
+            networkContext.strokeStyle = `rgba(91, 194, 199, ${(1 - distance / connectionDistance) * 0.16})`;
+            networkContext.lineWidth = 1;
+            networkContext.stroke();
+          }
+        }
+
+        networkContext.beginPath();
+        networkContext.arc(drawX, drawY, 1.5, 0, Math.PI * 2);
+        networkContext.fillStyle = `rgba(117, 220, 218, ${point.opacity})`;
+        networkContext.fill();
+      });
+
+      if (!reducedMotion) window.requestAnimationFrame(drawNetwork);
+    };
+
+    if (networkContext) {
+      resizeNetwork();
+      drawNetwork();
+      window.addEventListener('resize', resizeNetwork);
+      window.addEventListener('pointermove', (event) => {
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+        pointer.active = true;
+      }, { passive: true });
+      window.addEventListener('pointerleave', () => {
+        pointer.active = false;
+      });
+    }
+  }
 
   /**
    * Easy selector helper function
